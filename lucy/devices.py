@@ -35,6 +35,8 @@ class Device(object):
 
         self.get_reading()
 
+    # This method should return a string not a serialized json
+    # TODO: Change this and implement the object as Serializable
     def __str__(self):
         device = {
             "Id": self.id,

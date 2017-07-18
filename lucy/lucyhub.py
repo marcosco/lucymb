@@ -15,6 +15,7 @@ from devices import Device
 from slave import Slave
 
 
+# noinspection PyShadowingBuiltins
 class LucyHub(object):
     _connection = ""
     _slaves = {}
@@ -73,7 +74,7 @@ class LucyHub(object):
                 s.MAX_RETRIES = self.COMMUNICATION_RETRIES
                 if s.nodes:
                     self._slaves[slave_id] = s
-                    for node_address, node_type in s.nodes.iteritems():
+                    for node_address, node_type in s.nodes.items():
                         device = DeviceFactory.create(node_address, node_type, s)
                         if isinstance(device, Device) and device.id not in self._devices:
                             self._devices[device.id] = device
@@ -81,13 +82,13 @@ class LucyHub(object):
         return self._slaves
 
     def status(self):
-        for key, device in self._devices.iteritems():
+        for key, device in self._devices.items():
             print("%s is %s" % (device.name, device.get_reading()))
 
-    def get_reading(self, device=False, id=False):
-        if device:
+    def get_reading(self, device=None, id=None):
+        if device is not None:
             self._logger.debug('LucyHub is reading device %s as %s at %s:%s' % (
-            device.__class__, device.id, device._slave.id, device._address))
+                device.__class__, device.id, device.slave.id, device.address))
             response = device.get_reading()
             self._broker.publish("lucy/devices/" + str(device.id), response)
             return response
@@ -97,34 +98,34 @@ class LucyHub(object):
                 device = self._devices[id]
 
                 self._logger.debug('LucyHub is reading device %s as %s at %s:%s' % (
-                device.__class__, device.id, device._slave.id, device._address))
+                    device.__class__, device.id, device.slave.id, device.address))
                 response = device.get_reading()
                 self._broker.publish("lucy/devices/" + str(device.id), response)
                 return response
-            except KeyError, e:
+            except KeyError:
                 self._logger.error("Device %s not found." % id)
-            except IndexError, e:
+            except IndexError:
                 self._logger.error("Device %s not found." % id)
 
         r = []
-        for key, device in self._devices.iteritems():
+        for key, device in self._devices.items():
             self._logger.debug('LucyHub is reading device %s as %s at %s:%s' % (
-            device.__class__, device.id, device._slave.id, device._address))
+                device.__class__, device.id, device.slave.id, device.address))
             response = device.get_reading()
             self._broker.publish("lucy/devices/" + str(device.id), response)
             r.append(response)
 
         return r
 
-    def set_value(self, value, device=False, id=False):
-        if device:
+    def set_value(self, value, device=None, id=None):
+        if device is not None:
             try:
                 self._logger.debug('LucyHub is writing device %s as %s at %s:%s' % (
-                device.__class__, device.id, device._slave.id, device._address))
+                    device.__class__, device.id, device.slave.id, device.address))
                 response = device.set_value(value)
                 self._broker.publish("lucy/devices/" + str(device.id), response)
                 return response
-            except DeviceNotFound as e:  # coding=utf-8
+            except DeviceNotFound:  # coding=utf-8
                 self._logger.warning("Id %s not found." % device.id)
             except InvalidOperation as e:
                 self._logger.warning("Invalid operation for %s:%s" % (device.id, e))
@@ -134,35 +135,19 @@ class LucyHub(object):
             return ""
 
         if id:
-            try:
-                device = self._devices[id]
-                self._logger.debug('LucyHub is writing device %s as %s at %s:%s' % (
-                device.__class__, device.id, device._slave.id, device._address))
-                response = device.set_value(value)
-                self._broker.publish("lucy/devices/" + str(device.id), response)
-                return response
-            except InvalidOperation, e:
-                self._logger.warning("Invalid operation for %s:%s" % (device.id, str(e)))
-            except KeyError, e:
-                self._logger.error("Device %s not found." % id)
-            except IndexError, e:
-                self._logger.error("Device %s not found." % id)
-            except Exception, e:
-                self._logger.error("Exception %s" % e)
-
             return ""
 
         r = []
-        for key, device in self._devices.iteritems():
+        for key, device in self._devices.items():
             try:
                 self._logger.debug('LucyHub is writing device %s as %s at %s:%s' % (
-                device.__class__, device.id, device._slave.id, device._address))
+                    device.__class__, device.id, device.slave.id, device.address))
                 response = device.set_value(value)
                 self._broker.publish("lucy/devices/" + str(device.id), response)
                 r.append(response)
-            except InvalidOperation, e:
+            except InvalidOperation as e:
                 self._logger.warning("Invalid operation for %s:%s" % (device.name, e))
-            except Exception, e:
+            except Exception as e:
                 self._logger.error("Exception %s" % e)
 
         return r
@@ -185,11 +170,11 @@ class LucyHub(object):
         self._poller_thread_stop.set()
 
     def _poller(self, stop_event):
-        while (not stop_event.is_set()):
+        while not stop_event.is_set():
             schedule.run_pending()
-            for key, device in self._devices.iteritems():
+            for key, device in self._devices.items():
                 self._logger.debug('LucyHub poller is reading device %s as %s at %s:%s' % (
-                device.__class__, device.id, device._slave.id, device._address))
+                    device.__class__, device.id, device.slave.id, device.address))
                 device_reading = device.get_reading()
                 if device.got_news:
                     self._broker.publish("lucy/devices/" + str(device.id), device_reading, retain=True)

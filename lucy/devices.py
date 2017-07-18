@@ -49,6 +49,14 @@ class Device(object):
         }
         return json.dumps(device)
 
+    @property
+    def slave(self):
+        return self._slave
+
+    @property
+    def address(self):
+        return self._address
+
     def get_reading(self):
         """
 

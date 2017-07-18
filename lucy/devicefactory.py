@@ -1,5 +1,5 @@
 from __future__ import print_function
-from devices import Sensor, Switch
+from lucy.devices import Switch, Sensor
 
 
 # Must be Refactored in order to accept the type directly and not the string representing the type itself.

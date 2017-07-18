@@ -12,17 +12,17 @@ class DeviceFactory:
         """
 
         :param node_address: Address of the Node
-        :type node_address: str
-        :param node_type:
-        :type node_type:
+        :type node_address: int
+        :param node_type: Define the type of the node, currently Sensor or Switch
+        :type node_type: string
         :param slave:
         :type slave:
         :return:
         :rtype: Any -> (
         """
-        if node_type == "SENSOR":
+        if node_type.upper() == "SENSOR":
             return Sensor("Sensor", node_address, slave)
-        if node_type == "SWITCH":
+        if node_type.upper() == "SWITCH":
             return Switch("Switch", node_address, slave)
 
         print("Unable to create %s" % node_type)

@@ -118,14 +118,14 @@ class LucyHub(object):
         return r
 
     def set_value(self, value, device=None, id=None):
-        if device is not None:
+        if device:
             try:
                 self._logger.debug('LucyHub is writing device %s as %s at %s:%s' % (
                     device.__class__, device.id, device.slave.id, device.address))
                 response = device.set_value(value)
                 self._broker.publish("lucy/devices/" + str(device.id), response)
                 return response
-            except DeviceNotFound:  # coding=utf-8
+            except DeviceNotFound:
                 self._logger.warning("Id %s not found." % device.id)
             except InvalidOperation as e:
                 self._logger.warning("Invalid operation for %s:%s" % (device.id, e))
@@ -135,6 +135,22 @@ class LucyHub(object):
             return ""
 
         if id:
+            try:
+                device = self._devices[id]
+                self._logger.debug('LucyHub is writing device %s as %s at %s:%s' % (
+                    device.__class__, device.id, device.slave.id, device.address))
+                response = device.set_value(value)
+                self._broker.publish("lucy/devices/" + str(device.id), response)
+                return response
+            except InvalidOperation as e:
+                self._logger.warning("Invalid operation for %s:%s" % (device.id, str(e)))
+            except KeyError:
+                self._logger.error("Device %s not found." % id)
+            except IndexError:
+                self._logger.error("Device %s not found." % id)
+            except Exception as e:
+                self._logger.error("Exception %s" % e)
+
             return ""
 
         r = []

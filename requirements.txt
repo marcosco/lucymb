@@ -2,3 +2,4 @@ schedule
 modbus_tk
 pytest
 pytest-mock
+unittest

@@ -17,3 +17,10 @@ class InvalidOperation(Exception):
         self.msg = message
         # Return control to super class
         super(Exception, self).__init__(message)
+
+
+class NoTypeSpecifiedToFactory(Exception):
+    def __init__(self, message):
+        self.msg = message
+        # Return control to super class
+        super(Exception, self).__init__(message)

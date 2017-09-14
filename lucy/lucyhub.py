@@ -111,7 +111,7 @@ class LucyHub():
                 response = device.set_value(value)
                 self._broker.publish("lucy/devices/" + str(device.id), response)
                 return response
-            except DeviceNotFound as e: # coding=utf-8
+            except DeviceNotFound as e:
                 self._logger.warning("Id %s not found." % device.id)
             except InvalidOperation as e:
                 self._logger.warning("Invalid operation for %s:%s"%(device.id, e))

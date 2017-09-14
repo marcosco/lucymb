@@ -24,21 +24,20 @@ class Slave():
         self._master = {}
         self._errors = 0;
         self.nodes = {};
-#        self.sensors = {};
-
         self.MAX_RETRIES = retries
         self.id = id
         self._master = master
         self.nodes = self._extract_manifesto()
 
     def __str__(self):
-        slave = {}
-        slave["Id"] = self.id
-        slave["Errors"] = self._errors
-        slave["Nodes"] = self.nodes
-        slave["LastConnect"] = self.lastConnect
+        slave = {
+                    "Id":           self.id,
+                    "Errors":       self._errors,
+                    "Nodes":        self.nodes,
+                    "LastConnect":  self.lastConnect
+                }
 
-        return json.dumps(slave)
+        return str(slave)
 
     def _extract_manifesto(self):
         D = {};
@@ -66,22 +65,14 @@ class Slave():
         attempt += 1
         try:
             master = self._master
-            ret = {}
-            ret["ret"] = master.execute(self.id, cst.READ_HOLDING_REGISTERS, addr, length)
-            ret["err"] = attempt -1
+            ret = {
+                    "ret": master.execute(self.id, cst.READ_HOLDING_REGISTERS, addr, length),
+                    "err": attempt -1
+                  }
             self.lastConnect = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            #self.logger.info(ret)
             return ret
 
-        #except SerialException as exc:
-            #raise(ErrorReadingDevice("Error reading device."))
-
-        #except modbus_tk.modbus.ModbusError as exc:
-            #self.logger.error("%s- Code=%d", exc, exc.get_exception_code())
-            #raise(ErrorReadingDevice("Error reading device."))
-
         except (SerialException, modbus_tk.modbus.ModbusError, modbus_tk.modbus_rtu.ModbusInvalidResponseError) as e:
-            #self.logger.error("ModbusInvalidResponseError: %s"%e)
             if attempt < self.MAX_RETRIES:
                 self._master.close()
                 time.sleep(1.50)
@@ -99,23 +90,20 @@ class Slave():
             # Connect to the slave
             master = self._master
 
-            ret = {}
-            ret["ret"] = master.execute(self.id, cst.WRITE_SINGLE_REGISTER, addr, output_value=value)
-            ret["err"] = attempt -1
+            ret = {
+                    "ret": master.execute(self.id, cst.WRITE_SINGLE_REGISTER, addr, output_value=value),
+                    "err": attempt -1
+                  }
             self.lastConnect = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             self.logger.info(ret)
             return ret
 
         except modbus_tk.modbus.ModbusError as exc:
-            #self.logger.error("%s- Code=%d", exc, exc.get_exception_code())
             raise(ErrorReadingDevice("Error reading device."))
         except modbus_tk.modbus_rtu.ModbusInvalidResponseError as e:
-            #self.logger.error("ModbusInvalidResponseError: %s"%e)
             if attempt < self.MAX_RETRIES:
                 self._errors += 1;
-                #self.logger.info("Attempt %s: Retrying..."%attempt)
                 return self.write_single_register(addr, value, attempt)
 
             else:
-                #self.logger.warning("Attempt %s: Skipping..."%attempt)
                 raise(ErrorReadingDevice("Error reading device."))

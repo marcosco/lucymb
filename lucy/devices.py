@@ -24,16 +24,17 @@ class Device(object):
         self.get_reading()
 
     def __str__(self):
-        device = {}
-        device["Id"] = self.id
-        device["Name"] = self.name
-        device["Reading"] = self._reading
-        device["Address"] = self._address
-        device["SlaveId"] = self._slave.id
-        device["Errors"] = self._errors
-        device["LastRead"] = self.lastRead
+        device =  {
+                    "Id":       self.id,
+                    "Name":     self.name,
+                    "Reading":  self._reading,
+                    "Address":  self._address,
+                    "SlaveId":  self._slave.id,
+                    "Errors":   self._errors,
+                    "LastRead": self.lastRead
+                }
 
-        return json.dumps(device)
+        return str(device)
 
     def set_reading(self, reading):
         self._logger.debug('Device %s is set reading as %s at %s:%s'%(self.__class__, self.id, self._slave.id, self._address))

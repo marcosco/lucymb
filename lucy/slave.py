@@ -9,23 +9,22 @@ import logging
 from serial import SerialException
 
 class Slave():
-    id = ""
-    _master = {}
-    _errors = 0;
-    lastConnect = ""
-
-    nodes = {};
-
-    sensors = {};
-    sensors[0] = "NOT_VALID"
-    sensors[16] = "SENSOR"
-    sensors[128] = "SWITCH"
+    sensors = {
+                0:      "NOT_VALID",
+                16:     "SENSOR",
+                128:    "SWITCH"
+              }
 
     MAX_RETRIES = 0
 
     logger = modbus_tk.utils.create_logger("console", level=logging.WARNING)
 
     def __init__(self, id, master, retries=5):
+        self._master = {}
+        self._errors = 0;
+        self.nodes = {};
+#        self.sensors = {};
+
         self.MAX_RETRIES = retries
         self.id = id
         self._master = master
@@ -50,7 +49,6 @@ class Slave():
                 try:
                     node_type = self.read_holding_registers(0 + index + 1, 1)["ret"][0]
                     node_addr = count + index + 1
-
                     D[node_addr] = self.sensors[node_type]
                 except modbus_tk.modbus_rtu.ModbusInvalidResponseError as e:
                     self.logger.error("ModbusInvalidResponseError: %s"%e)

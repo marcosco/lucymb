@@ -4,25 +4,19 @@ import logging
 from .exceptions import ErrorReadingDevice, InvalidOperation
 
 class Device(object):
-    name = ""
-    _reading = ""
-    _address = 0
-    _slave = 0
-    _errors = 0
-    lastRead = ""
-    id = ""
-    _logger = ""
-    got_news = True
-
 
     def __init__(self, name, address, slave):
+        self.name = name
+        self._address = address
+        self._slave = slave
+        self._errors = 0
+        self.got_news = True
+        self._reading = None
+        self.lastRead = None
         format = "%(asctime)s\t%(levelname)s\t%(module)s.%(funcName)s\t%(threadName)s\t%(message)s"
         logging.basicConfig(level=logging.DEBUG, format=format)
 
         self._logger = logging.getLogger(__name__)
-        self.name = name
-        self._address = address
-        self._slave = slave
         self.id = self._slave.id*256 + self._address
         self._logger.info('Device %s created as %s at %s:%s'%(self.__class__, self.id, self._slave.id, self._address))
 
@@ -49,7 +43,6 @@ class Device(object):
             self.lastRead = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         return str(self)
-
 
     def get_reading(self):
         try:

@@ -14,22 +14,15 @@ from .devices import Device
 from .exceptions import DeviceNotFound, InvalidOperation, ErrorReadingDevice
 
 class LucyHub():
-    _connection = ""
-    _slaves = {}
-    _devices = {}
-    _logger = ""
-    _poller_thread_stop = ""
-    _poller_thread = ""
-    _broker = ""
-
     DISCOVERY_RETRIES=3
     COMMUNICATION_RETRIES=5
 
     def __init__(self, serial):
+        self._slaves = {}
+        self._devices = {}
         format = "%(asctime)s\t%(levelname)s\t%(module)s.%(funcName)s\t%(threadName)s\t%(message)s"
         logging.basicConfig(level=logging.INFO, format=format)
         self._logger = logging.getLogger(__name__)
-
         self._connection = self._connect(serial)
 
         self.discovery()

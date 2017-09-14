@@ -1,7 +1,7 @@
 import json
 import datetime
 import logging
-from exceptions import ErrorReadingDevice, InvalidOperation
+from .exceptions import ErrorReadingDevice, InvalidOperation
 
 class Device(object):
     name = ""
@@ -20,9 +20,9 @@ class Device(object):
         logging.basicConfig(level=logging.DEBUG, format=format)
 
         self._logger = logging.getLogger(__name__)
-    	self.name = name
-    	self._address = address
-    	self._slave = slave
+        self.name = name
+        self._address = address
+        self._slave = slave
         self.id = self._slave.id*256 + self._address
         self._logger.info('Device %s created as %s at %s:%s'%(self.__class__, self.id, self._slave.id, self._address))
 
@@ -40,6 +40,17 @@ class Device(object):
 
         return json.dumps(device)
 
+    def set_reading(self, reading):
+        self._logger.debug('Device %s is set reading as %s at %s:%s'%(self.__class__, self.id, self._slave.id, self._address))
+
+        if reading != self._reading:
+            self._reading = reading
+            self.got_news = True
+            self.lastRead = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        return str(self)
+
+
     def get_reading(self):
         try:
             self._logger.debug('Device %s reading as %s at %s:%s'%(self.__class__, self.id, self._slave.id, self._address))
@@ -50,13 +61,13 @@ class Device(object):
                 self.got_news = True
             self._errors += response["err"]
             self.lastRead = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        except ErrorReadingDevice, e:
+        except ErrorReadingDevice as e:
             self._logger.error('Device %s error reading as %s at %s:%s with %s'%(self.__class__, self.id, self._slave.id, self._address, e))
 
         return str(self)
 
     def get_address(self):
-		return self._address
+        return self._address
 
     def get_slave_id(self):
         return self._slave_id

@@ -1,4 +1,4 @@
-from devices import Sensor, Switch
+from .devices import Sensor, Switch
 
 class DeviceFactory():
     @staticmethod
@@ -8,4 +8,4 @@ class DeviceFactory():
         if node_type == "SWITCH":
             return Switch("Switch", node_address, slave)
 
-        print "Unable to create %s" % node_type
+        print("Unable to create %s" % node_type)

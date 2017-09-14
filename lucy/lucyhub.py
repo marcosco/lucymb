@@ -8,10 +8,10 @@ import schedule
 from threading import Thread
 import logging
 import paho.mqtt.client as mqtt
-from slave import Slave
-from devicefactory import DeviceFactory
-from devices import Device
-from exceptions import DeviceNotFound, InvalidOperation
+from .slave import Slave
+from .devicefactory import DeviceFactory
+from .devices import Device
+from .exceptions import DeviceNotFound, InvalidOperation, ErrorReadingDevice
 
 class LucyHub():
     _connection = ""
@@ -49,19 +49,19 @@ class LucyHub():
         self._broker.loop_start()
 
     def _connect(self, serial):
-		master = modbus_rtu.RtuMaster(serial)
-		master.set_timeout(0.5)
-		master.set_verbose(False)
+        master = modbus_rtu.RtuMaster(serial)
+        master.set_timeout(0.5)
+        master.set_verbose(False)
 
-		return master
+        return master
 
     def dump(self):
-        for key,slave in self._slaves.iteritems():
-            print slave
-        for key,device in self._devices.iteritems():
-            print device
+        for key,slave in self._slaves.items():
+            print(slave)
+        for key,device in self._devices.items():
+            print(device)
 
-    def discovery(self,limit=3):
+    def discovery(self,limit=2):
         self._logger.info("Starting discovery operation")
         for slave_id in range(1, limit +1 ):
             if slave_id not in self._slaves:
@@ -70,7 +70,7 @@ class LucyHub():
                 s.MAX_RETRIES = self.COMMUNICATION_RETRIES
                 if s.nodes:
                     self._slaves[slave_id] = s
-                    for node_address, node_type in s.nodes.iteritems():
+                    for node_address, node_type in s.nodes.items():
                         device = DeviceFactory.create(node_address, node_type, s)
                         if isinstance(device, Device) and device.id not in self._devices:
                             self._devices[device.id]=device
@@ -78,8 +78,8 @@ class LucyHub():
         return self._slaves
 
     def status(self):
-		for key, device in self._devices.iteritems():
-			print "%s is %s" % (device.name, device.get_reading())
+        for key, device in self._devices.items():
+            print("%s is %s" % (device.name, device.get_reading()))
 
     def get_reading(self, device=False, id=False):
         if device:
@@ -96,13 +96,13 @@ class LucyHub():
                 response = device.get_reading()
                 self._broker.publish("lucy/devices/" + str(device.id), response)
                 return response
-            except KeyError, e:
+            except KeyError as e:
                 self._logger.error("Device %s not found."%id)
-            except IndexError, e:
+            except IndexError as e:
                 self._logger.error("Device %s not found."%id)
 
         r = []
-        for key,device in self._devices.iteritems():
+        for key,device in self._devices.items():
             self._logger.debug('LucyHub is reading device %s as %s at %s:%s'%(device.__class__, device.id, device._slave.id, device._address))
             response = device.get_reading()
             self._broker.publish("lucy/devices/" + str(device.id), response)
@@ -117,11 +117,11 @@ class LucyHub():
                 response = device.set_value(value)
                 self._broker.publish("lucy/devices/" + str(device.id), response)
                 return response
-            except DeviceNotFound, e: # coding=utf-8
+            except DeviceNotFound as e: # coding=utf-8
                 self._logger.warning("Id %s not found." % device.id)
-            except InvalidOperation, e:
+            except InvalidOperation as e:
                 self._logger.warning("Invalid operation for %s:%s"%(device.id, e))
-            except Exception, e:
+            except Exception as e:
                 self._logger.error("Exception %s"%e)
 
             return ""
@@ -133,27 +133,27 @@ class LucyHub():
                 response = device.set_value(value)
                 self._broker.publish("lucy/devices/" + str(device.id), response)
                 return response
-            except InvalidOperation, e:
+            except InvalidOperation as e:
                 self._logger.warning("Invalid operation for %s:%s"%(device.id, str(e)))
-            except KeyError, e:
+            except KeyError as e:
                 self._logger.error("Device %s not found."%id)
-            except IndexError, e:
+            except IndexError as e:
                 self._logger.error("Device %s not found."%id)
-            except Exception, e:
+            except Exception as e:
                 self._logger.error("Exception %s"%e)
 
             return ""
 
         r = []
-        for key,device in self._devices.iteritems():
+        for key,device in self._devices.items():
             try:
                 self._logger.debug('LucyHub is writing device %s as %s at %s:%s'%(device.__class__, device.id, device._slave.id, device._address))
                 response = device.set_value(value)
                 self._broker.publish("lucy/devices/" + str(device.id), response)
                 r.append(response)
-            except InvalidOperation, e:
+            except InvalidOperation as e:
                 self._logger.warning("Invalid operation for %s:%s"%(device.name, e))
-            except Exception, e:
+            except Exception as e:
                 self._logger.error("Exception %s"%e)
 
         return r
@@ -178,13 +178,26 @@ class LucyHub():
     def _poller(self, stop_event):
         while (not stop_event.is_set()):
             schedule.run_pending()
-            for key, device in self._devices.iteritems():
-                self._logger.debug('LucyHub poller is reading device %s as %s at %s:%s'%(device.__class__, device.id, device._slave.id, device._address))
-                device_reading = device.get_reading()
-                if device.got_news:
-                    self._broker.publish("lucy/devices/" + str(device.id), device_reading, retain=True)
-                    device.got_news = False
-                #time.sleep(0.01)
+            for key, slave in self._slaves.items():
+                self._logger.debug('LucyHub poller is reading slave %s'%slave.id)
+                count = len(slave.nodes) * 2 + 1
+                try:
+                    results = slave.read_holding_registers(0, count)["ret"]
+                    self._logger.debug(results)
+                    for i in range(len(slave.nodes)):
+                        offset = i+len(slave.nodes)+1
+                        address = slave.id * 256 + offset
+                        device = self._devices[address]
+                        device_reading = results[offset]
+                        device_status = device.set_reading(device_reading)
+                        self._logger.debug('setting %s as %s'%(results[i+len(slave.nodes)+1], slave.id * 256 + i+len(slave.nodes)+1 ))
+                        if device.got_news:
+                            self._logger.debug('Device %s has news! Publishing: %s'%(address, device))
+                            self._broker.publish("lucy/devices/" + str(device.id), device_status, retain=True)
+                            device.got_news = False
+                except ErrorReadingDevice as e:
+                    self._logger.warning('Error reading device id %s'%slave.id)
+                time.sleep(0.2)
 
     # The callback for when the client receives a CONNACK response from the server.
     def on_broker_connect(self, client, userdata, flags, rc):
@@ -196,4 +209,7 @@ class LucyHub():
         self._logger.info(msg.topic+" "+str(msg.payload))
         request = msg.topic.split("/")
         if request[0] == "lucy" and request[1] == "commands" and request[2] == "devices":
-            self.set_value(int(msg.payload), id=int(request[3]))
+            try:
+                self.set_value(int(msg.payload), id=int(request[3]))
+            except ValueError:
+                self._logger.warning('Invalid payload at %s'%msg.topic)

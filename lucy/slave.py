@@ -1,11 +1,12 @@
+import datetime
 import json
+import logging
 import modbus_tk
 import modbus_tk.defines as cst
-from modbus_tk import modbus_rtu, hooks
 import time
-import datetime
+
+from modbus_tk import modbus_rtu, hooks
 from .exceptions import ErrorReadingDevice
-import logging
 from serial import SerialException
 
 class Slave():

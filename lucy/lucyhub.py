@@ -1,13 +1,14 @@
-import modbus_tk
-from modbus_tk import modbus_rtu
-import serial
-import time
 import json
-import threading
-import schedule
-from threading import Thread
 import logging
 import paho.mqtt.client as mqtt
+import schedule
+import serial
+import threading
+import time
+
+from modbus_tk import modbus_rtu
+from threading import Thread
+
 from .slave import Slave
 from .devicefactory import DeviceFactory
 from .devices import Device

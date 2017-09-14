@@ -1,6 +1,7 @@
-import json
 import datetime
+import json
 import logging
+
 from .exceptions import ErrorReadingDevice, InvalidOperation
 
 class Device(object):
